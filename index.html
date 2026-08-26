@@ -213,32 +213,27 @@
             isProcessing = false;
         }
 
-        async function sendData(zone, admin, confirmed) {
+         async function sendData(zone, admin, confirmed) {
             try {
-                const payload = { zone, admin, confirmed };
-                console.log('Sending data:', payload);
-
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                const params = new URLSearchParams({
+                    zone: zone,
+                    admin: admin,
+                    confirmed: confirmed.toString()
                 });
-
-                console.log('Response status:', response.status);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                console.log('Server response:', result);
-                return result.success === true;
+                const url = `${SCRIPT_URL}?${params.toString()}`;
+                console.log('Sending GET request:', url);
+        
+                await fetch(url, {
+                    method: 'GET',
+                    mode: 'no-cors'
+                });
+                return true; // no-cors не позволяет проверить ответ, считаем успех
             } catch (error) {
                 console.error('Send error:', error);
                 return false;
             }
         }
-
+        
         btnYes.addEventListener('click', async () => {
             const adminName = adminInput.value.trim();
             if (!adminName) {
