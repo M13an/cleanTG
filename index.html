@@ -154,7 +154,7 @@
 
     <script>
         // ====== НАСТРОЙКИ ======
-        // ⚠️ ЗАМЕНИТЕ ЭТУ ССЫЛКУ НА URL ВАШЕГО РАЗВЁРНУТОГО СКРИПТА (без слеша в конце)
+        // ⚠️ ВСТАВЬТЕ СВОЙ URL (без слеша в конце)
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9Ivcl9izK0V4AOOyhPCJJVBfANJi4735PFvv06IXvp7OFdEIF776_442-87mvO8ydQw/exec';
 
         const ZONES = {
@@ -313,7 +313,9 @@
             }
         });
 
+        // Кнопка "ДА"
         btnYes.addEventListener('click', async () => {
+            // Проверка имени
             const adminName = adminInput.value.trim();
             if (!adminName) {
                 closeModal();
@@ -331,14 +333,23 @@
                 return;
             }
 
+            // Закрываем модалку
             closeModal();
             showMessage('⏳ Отправка данных...', 'info');
 
-            const success = await sendData(zoneCodeToSend, adminName, true);
-
-            currentZone = null;
-            currentZoneCode = null;
-            isProcessing = false;
+            // Отправляем, обрабатываем ошибки
+            let success = false;
+            try {
+                success = await sendData(zoneCodeToSend, adminName, true);
+            } catch (err) {
+                console.error('Ошибка при отправке:', err);
+                success = false;
+            } finally {
+                // ВСЕГДА сбрасываем состояние после отправки (даже при ошибке)
+                currentZone = null;
+                currentZoneCode = null;
+                isProcessing = false;
+            }
 
             if (success) {
                 showMessage('✅ Отметка успешно отправлена!', 'success');
@@ -347,6 +358,7 @@
             }
         });
 
+        // Кнопка "НЕТ"
         btnNo.addEventListener('click', () => {
             const adminName = adminInput.value.trim();
             if (!adminName) {
@@ -367,6 +379,7 @@
             closeModal();
             showMessage('⏳ Отправка данных (отказ)...', 'info');
 
+            // Отправляем асинхронно, но сбрасываем состояние сразу
             sendData(zoneCodeToSend, adminName, false).then(success => {
                 if (success) {
                     showMessage('🧹 Отказ зафиксирован. Пожалуйста, уберите зону и отсканируйте код повторно.', 'error');
@@ -375,6 +388,7 @@
                 }
             });
 
+            // Сбрасываем состояние сразу (не ждём ответа)
             currentZone = null;
             currentZoneCode = null;
             isProcessing = false;
