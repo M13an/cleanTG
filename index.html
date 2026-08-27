@@ -213,7 +213,6 @@
 
         async function sendData(zone, admin, confirmed) {
             try {
-                // Формируем URL с параметрами
                 const params = new URLSearchParams({
                     zone: zone,
                     admin: admin,
@@ -221,14 +220,15 @@
                 });
                 const url = `${SCRIPT_URL}?${params.toString()}`;
                 console.log('Sending GET request:', url);
-
+        
                 const response = await fetch(url, {
                     method: 'GET',
-                    mode: 'no-cors' // обход CORS, мы не читаем ответ
+                    // убираем mode: 'no-cors', чтобы получить ответ
                 });
-                
-                console.log('Запрос отправлен, статус недоступен из-за no-cors');
-                return true; // считаем, что успешно, т.к. no-cors не даёт проверить
+        
+                const result = await response.json();
+                console.log('Server response:', result);
+                return result.success === true;
             } catch (error) {
                 console.error('Send error:', error);
                 return false;
