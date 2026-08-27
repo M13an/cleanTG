@@ -73,6 +73,7 @@
         <div id="message" class="message"></div>
     </div>
 
+    <!-- Модальное окно подтверждения -->
     <div id="confirm-modal" class="modal">
         <div class="modal-content">
             <h3>⚠️ Подтверждение</h3>
@@ -87,7 +88,7 @@
 
     <script>
         // ====== НАСТРОЙКИ ======
-        const SCRIPT_URL = 'https://script.google.com/u/0/home/projects/1llWdxpo7I1QUFHzskY3tY8Y7-dTu3d1CcIyKVVOygtrg92EuuPoU6hdw/edit'; // ваш URL
+        const SCRIPT_URL = 'https://script.google.com/u/0/home/projects/1llWdxpo7I1QUFHzskY3tY8Y7-dTu3d1CcIyKVVOygtrg92EuuPoU6hdw/edit'; // ← замените на ваш URL
         const ZONES = {
             'ZONE_NORMAL_1': 'НОРМАЛ 1 ряд',
             'ZONE_NORMAL_2_3': 'НОРМАЛ 2/3 ряд',
@@ -133,13 +134,14 @@
         function showConfirmation(zoneCode) {
             currentZone = ZONES[zoneCode] || zoneCode;
             modal.style.display = 'flex';
+            isProcessing = false; // ← ВАЖНО: разрешаем нажатие кнопок
         }
 
         function closeModal() {
             modal.style.display = 'none';
         }
 
-        // Отправка данных методом "невидимой картинки" (100% работает)
+        // Отправка данных методом "невидимой картинки" (без CORS-ошибок)
         function sendData(zone, admin, confirmed) {
             try {
                 const params = `zone=${encodeURIComponent(zone)}&admin=${encodeURIComponent(admin)}&confirmed=${confirmed}`;
@@ -158,11 +160,14 @@
             console.log('Клик по кнопке Да');
             const adminName = adminInput.value.trim();
             if (!adminName) { alert('Введите ваше имя!'); return; }
-            if (isProcessing) return;
             isProcessing = true;
             const zoneToSend = currentZone;
             closeModal();
-            if (!zoneToSend) { showMessage('❌ Зона не определена.', 'error'); isProcessing = false; return; }
+            if (!zoneToSend) {
+                showMessage('❌ Зона не определена.', 'error');
+                isProcessing = false;
+                return;
+            }
             const success = sendData(zoneToSend, adminName, true);
             if (success) showMessage('✅ Отметка успешно отправлена!', 'success');
             else showMessage('❌ Ошибка отправки данных. Попробуйте ещё раз.', 'error');
@@ -218,8 +223,12 @@
                     isProcessing = true;
                     const zoneCode = code.data.trim();
                     console.log('QR распознан:', zoneCode);
-                    if (ZONES.hasOwnProperty(zoneCode)) showConfirmation(zoneCode);
-                    else { showMessage('❓ Неизвестный QR-код: ' + zoneCode, 'error'); isProcessing = false; }
+                    if (ZONES.hasOwnProperty(zoneCode)) {
+                        showConfirmation(zoneCode); // здесь сбросится isProcessing
+                    } else {
+                        showMessage('❓ Неизвестный QR-код: ' + zoneCode, 'error');
+                        isProcessing = false;
+                    }
                     return;
                 }
             }
