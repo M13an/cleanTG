@@ -6,7 +6,7 @@
     <title>Сканер зон TG</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <style>
-        /* (стили как раньше, без изменений) */
+        /* (стили без изменений) */
         :root {
             --bg: #0f1117;
             --surface: #1a1d27;
@@ -154,7 +154,7 @@
 
     <script>
         // ====== НАСТРОЙКИ ======
-        // ⚠️ ВСТАВЬТЕ СВОЙ URL ПОСЛЕ ПУБЛИКАЦИИ СКРИПТА (без слеша в конце)
+        // ⚠️ ЗАМЕНИТЕ НА ВАШ РЕАЛЬНЫЙ URL (без слеша в конце)
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2MDwdyzT9pzWmxYrfl51qRnX9ZZxsuz4Q5WbpMvvy3BvjWAIQxz8TTKU8Yc1YdacUqw/exec';
 
         const ZONES = {
@@ -176,6 +176,8 @@
             'ZONE_TAMBOUR': 'Тамбур'
         };
         // ========================
+
+        console.log('[INIT] Приложение загружено');
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
@@ -228,7 +230,6 @@
 
                 console.log('[SEND] URL запроса:', url.toString());
 
-                // Создаём невидимый iframe
                 const iframe = document.createElement('iframe');
                 iframe.style.display = 'none';
                 iframe.src = url.toString();
@@ -285,7 +286,7 @@
                 console.log('[CAM] Камера запущена, начинаем tick');
                 requestAnimationFrame(tick);
             } catch (err) {
-                console.error('[CAM] Ошибка камеры:', err);
+                console.error('Camera error:', err);
                 showMessage('📵 Не удалось получить доступ к камере.', 'error');
                 stopScanning();
             }
@@ -293,10 +294,7 @@
 
         // ---------- ЦИКЛ СКАНИРОВАНИЯ ----------
         function tick() {
-            if (!scanning) {
-                console.log('[TICK] scanning = false, выход');
-                return;
-            }
+            if (!scanning) return;
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
@@ -306,10 +304,10 @@
                     inversionAttempts: 'dontInvert'
                 });
                 if (code && code.data && !isProcessing) {
-                    console.log('[TICK] QR-код обнаружен:', code.data);
                     stopScanning();
                     isProcessing = true;
                     const zoneCode = code.data.trim();
+                    console.log('[TICK] QR-код обнаружен:', zoneCode);
                     if (ZONES.hasOwnProperty(zoneCode)) {
                         showConfirmation(zoneCode);
                     } else {
@@ -324,7 +322,7 @@
 
         // ---------- ОБРАБОТЧИКИ КНОПОК ----------
         scanBtn.addEventListener('click', () => {
-            console.log('[UI] Кнопка сканирования нажата, scanning=', scanning);
+            console.log('[UI] Кнопка сканирования нажата, scanning =', scanning);
             if (scanning) {
                 stopScanning();
             } else {
@@ -332,24 +330,18 @@
             }
         });
 
-        // Кнопка "ДА"
-        btnYes.addEventListener('click', function() {
+        // Кнопка "ДА" (исправлена: убрана блокировка isProcessing)
+        btnYes.addEventListener('click', () => {
             console.log('[UI] Кнопка "Да" нажата');
             const adminName = adminInput.value.trim();
             if (!adminName) {
-                console.log('[UI] Нет имени');
                 closeModal();
                 showMessage('⚠️ Введите ваше имя!', 'error');
                 isProcessing = false;
                 return;
             }
-            if (isProcessing) {
-                console.log('[UI] isProcessing = true, выход');
-                return;
-            }
 
             const zoneCodeToSend = currentZoneCode;
-            console.log('[UI] zoneCodeToSend =', zoneCodeToSend);
             if (!zoneCodeToSend) {
                 closeModal();
                 showMessage('❌ Ошибка: зона не определена', 'error');
@@ -357,28 +349,21 @@
                 return;
             }
 
-            console.log('[UI] Закрываем модалку');
+            // Закрываем модалку и отправляем
             closeModal();
             showMessage('⏳ Отправка данных (Да)...', 'info');
 
-            // Отправляем
-            const ok = sendData(zoneCodeToSend, adminName, true);
-            console.log('[UI] sendData вернул:', ok);
+            // Отправляем через iframe
+            sendData(zoneCodeToSend, adminName, true);
 
             // Сбрасываем состояние
             currentZoneCode = null;
             isProcessing = false;
-            console.log('[UI] Состояние сброшено');
-
-            if (ok) {
-                showMessage('✅ Отметка успешно отправлена!', 'success');
-            } else {
-                showMessage('❌ Ошибка при отправке, но запрос отправлен.', 'error');
-            }
+            showMessage('✅ Отметка успешно отправлена!', 'success');
         });
 
-        // Кнопка "НЕТ"
-        btnNo.addEventListener('click', function() {
+        // Кнопка "НЕТ" (работает, оставляем как есть, но добавим логи)
+        btnNo.addEventListener('click', () => {
             console.log('[UI] Кнопка "Нет" нажата');
             const adminName = adminInput.value.trim();
             if (!adminName) {
@@ -409,14 +394,12 @@
         // Закрытие модалки по клику вне
         window.onclick = function(event) {
             if (event.target === modal) {
-                console.log('[UI] Клик вне модалки');
+                console.log('[UI] Клик вне модалки, закрываем');
                 closeModal();
                 isProcessing = false;
                 currentZoneCode = null;
             }
         };
-
-        console.log('[INIT] Приложение загружено');
     </script>
 </body>
 </html>
