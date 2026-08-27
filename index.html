@@ -154,8 +154,8 @@
 
     <script>
         // ====== НАСТРОЙКИ ======
-        // ⚠️ ВСТАВЬТЕ СВОЙ URL (без слеша в конце)
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9Ivcl9izK0V4AOOyhPCJJVBfANJi4735PFvv06IXvp7OFdEIF776_442-87mvO8ydQw/exec';
+        // ⚠️ ВСТАВЬТЕ СВОЙ URL ПОСЛЕ ПУБЛИКАЦИИ СКРИПТА (без слеша в конце)
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2MDwdyzT9pzWmxYrfl51qRnX9ZZxsuz4Q5WbpMvvy3BvjWAIQxz8TTKU8Yc1YdacUqw/exec';
 
         const ZONES = {
             'ZONE_NORMAL_1': 'НОРМАЛ 1 ряд',
@@ -188,7 +188,6 @@
         const messageDiv = document.getElementById('message');
 
         let scanning = false;
-        let currentZone = null;
         let currentZoneCode = null;
         let stream = null;
         let isProcessing = false;
@@ -206,7 +205,6 @@
 
         function showConfirmation(zoneCode) {
             currentZoneCode = zoneCode;
-            currentZone = ZONES[zoneCode] || zoneCode;
             modal.style.display = 'flex';
         }
 
@@ -214,8 +212,8 @@
             modal.style.display = 'none';
         }
 
-        // ---------- ОТПРАВКА ДАННЫХ (GET с no-cors) ----------
-        async function sendData(zoneCode, admin, confirmed) {
+        // ---------- ОТПРАВКА ДАННЫХ (через создание iframe, 100% обход CORS) ----------
+        function sendData(zoneCode, admin, confirmed) {
             try {
                 const url = new URL(SCRIPT_URL);
                 url.searchParams.append('zone', zoneCode);
@@ -223,12 +221,16 @@
                 url.searchParams.append('confirmed', confirmed ? 'true' : 'false');
                 url.searchParams.append('_', Date.now());
 
-                await fetch(url.toString(), {
-                    method: 'GET',
-                    mode: 'no-cors' // 👈 обходим CORS
-                });
-                // При no-cors мы не можем прочитать ответ, но запрос ушёл.
-                // Считаем успехом, если fetch не выбросил ошибку.
+                // Создаём невидимый iframe и загружаем в него URL – это гарантированно отправляет запрос без CORS
+                const iframe = document.createElement('iframe');
+                iframe.style.display = 'none';
+                iframe.src = url.toString();
+                document.body.appendChild(iframe);
+                // Удаляем iframe через пару секунд
+                setTimeout(() => {
+                    iframe.remove();
+                }, 5000);
+
                 return true;
             } catch (error) {
                 console.error('Send error:', error);
@@ -312,7 +314,7 @@
         });
 
         // Кнопка "ДА"
-        btnYes.addEventListener('click', async () => {
+        btnYes.addEventListener('click', () => {
             const adminName = adminInput.value.trim();
             if (!adminName) {
                 closeModal();
@@ -333,10 +335,10 @@
             closeModal();
             showMessage('⏳ Отправка данных...', 'info');
 
-            // Отправляем, но не ждём результата, считаем успехом
-            await sendData(zoneCodeToSend, adminName, true);
+            // Отправляем (используем iframe, чтобы гарантированно обойти CORS)
+            sendData(zoneCodeToSend, adminName, true);
+
             // Сбрасываем состояние
-            currentZone = null;
             currentZoneCode = null;
             isProcessing = false;
             showMessage('✅ Отметка успешно отправлена!', 'success');
@@ -364,7 +366,7 @@
             showMessage('⏳ Отправка данных (отказ)...', 'info');
 
             sendData(zoneCodeToSend, adminName, false);
-            currentZone = null;
+
             currentZoneCode = null;
             isProcessing = false;
             showMessage('🧹 Отказ зафиксирован. Пожалуйста, уберите зону и отсканируйте код повторно.', 'error');
@@ -375,7 +377,6 @@
             if (event.target === modal) {
                 closeModal();
                 isProcessing = false;
-                currentZone = null;
                 currentZoneCode = null;
             }
         };
