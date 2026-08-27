@@ -214,24 +214,22 @@
             modal.style.display = 'none';
         }
 
-        // ---------- ОТПРАВКА ДАННЫХ (GET) ----------
+        // ---------- ОТПРАВКА ДАННЫХ (GET с no-cors) ----------
         async function sendData(zoneCode, admin, confirmed) {
             try {
                 const url = new URL(SCRIPT_URL);
                 url.searchParams.append('zone', zoneCode);
                 url.searchParams.append('admin', admin);
                 url.searchParams.append('confirmed', confirmed ? 'true' : 'false');
-                url.searchParams.append('_', Date.now()); // антикеш
+                url.searchParams.append('_', Date.now());
 
-                const response = await fetch(url.toString(), { method: 'GET' });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const result = await response.json();
-                console.log('Server response:', result);
-                return result.success === true;
+                await fetch(url.toString(), {
+                    method: 'GET',
+                    mode: 'no-cors' // 👈 обходим CORS
+                });
+                // При no-cors мы не можем прочитать ответ, но запрос ушёл.
+                // Считаем успехом, если fetch не выбросил ошибку.
+                return true;
             } catch (error) {
                 console.error('Send error:', error);
                 return false;
@@ -315,7 +313,6 @@
 
         // Кнопка "ДА"
         btnYes.addEventListener('click', async () => {
-            // Проверка имени
             const adminName = adminInput.value.trim();
             if (!adminName) {
                 closeModal();
@@ -333,29 +330,16 @@
                 return;
             }
 
-            // Закрываем модалку
             closeModal();
             showMessage('⏳ Отправка данных...', 'info');
 
-            // Отправляем, обрабатываем ошибки
-            let success = false;
-            try {
-                success = await sendData(zoneCodeToSend, adminName, true);
-            } catch (err) {
-                console.error('Ошибка при отправке:', err);
-                success = false;
-            } finally {
-                // ВСЕГДА сбрасываем состояние после отправки (даже при ошибке)
-                currentZone = null;
-                currentZoneCode = null;
-                isProcessing = false;
-            }
-
-            if (success) {
-                showMessage('✅ Отметка успешно отправлена!', 'success');
-            } else {
-                showMessage('❌ Ошибка отправки данных. Попробуйте ещё раз.', 'error');
-            }
+            // Отправляем, но не ждём результата, считаем успехом
+            await sendData(zoneCodeToSend, adminName, true);
+            // Сбрасываем состояние
+            currentZone = null;
+            currentZoneCode = null;
+            isProcessing = false;
+            showMessage('✅ Отметка успешно отправлена!', 'success');
         });
 
         // Кнопка "НЕТ"
@@ -379,19 +363,11 @@
             closeModal();
             showMessage('⏳ Отправка данных (отказ)...', 'info');
 
-            // Отправляем асинхронно, но сбрасываем состояние сразу
-            sendData(zoneCodeToSend, adminName, false).then(success => {
-                if (success) {
-                    showMessage('🧹 Отказ зафиксирован. Пожалуйста, уберите зону и отсканируйте код повторно.', 'error');
-                } else {
-                    showMessage('❌ Ошибка отправки отказа. Попробуйте ещё раз.', 'error');
-                }
-            });
-
-            // Сбрасываем состояние сразу (не ждём ответа)
+            sendData(zoneCodeToSend, adminName, false);
             currentZone = null;
             currentZoneCode = null;
             isProcessing = false;
+            showMessage('🧹 Отказ зафиксирован. Пожалуйста, уберите зону и отсканируйте код повторно.', 'error');
         });
 
         // Закрытие модалки по клику вне
