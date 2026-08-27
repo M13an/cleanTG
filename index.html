@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -6,20 +6,22 @@
     <title>Сканер зон TG</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <style>
+        /* Стили (оставлены без изменений) */
         :root {
             --bg: #0f1117;
             --surface: #1a1d27;
             --surface-light: #242837;
             --accent: #00e676;
+            --accent-dark: #00c853;
             --danger: #ff5252;
             --text: #ffffff;
             --text-secondary: #b0b3c5;
             --border-radius: 16px;
-            --shadow: 0 8px 32px rgba(0,0,0,0.4);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
-        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
@@ -28,31 +30,92 @@
             align-items: center;
             padding: 16px;
         }
-        .container { width:100%; max-width:420px; background:var(--surface); border-radius:var(--border-radius); padding:24px; box-shadow:var(--shadow); border:1px solid rgba(255,255,255,0.05); }
-        .header { text-align:center; margin-bottom:24px; }
-        .header h1 { font-size:26px; font-weight:700; background:linear-gradient(135deg,var(--accent),#69f0ae); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-        .header p { color:var(--text-secondary); font-size:14px; margin-top:6px; }
-        .input-group { margin-bottom:20px; }
-        .input-group label { display:block; font-size:13px; font-weight:500; color:var(--text-secondary); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; }
-        .input-group input { width:100%; padding:14px 16px; background:var(--surface-light); border:2px solid transparent; border-radius:12px; color:var(--text); font-size:16px; outline:none; }
-        .input-group input:focus { border-color:var(--accent); }
-        .video-wrapper { position:relative; width:100%; aspect-ratio:1/1; background:#000; border-radius:12px; overflow:hidden; margin-bottom:20px; border:2px solid var(--surface-light); }
-        #video { width:100%; height:100%; object-fit:cover; }
-        #canvas { display:none; }
-        .btn-primary { width:100%; padding:16px; background:var(--accent); color:#0f1117; border:none; border-radius:12px; font-size:17px; font-weight:700; cursor:pointer; }
-        .btn-primary:active { transform:scale(0.97); }
-        .message { margin-top:16px; padding:14px; border-radius:12px; text-align:center; font-weight:500; display:none; }
-        .message.success { background:rgba(0,230,118,0.15); color:#69f0ae; display:block; }
-        .message.error { background:rgba(255,82,82,0.15); color:#ff8a80; display:block; }
-        .message.info { background:rgba(0,176,255,0.15); color:#80d8ff; display:block; }
-        .modal { display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); justify-content:center; align-items:center; }
-        .modal-content { background:var(--surface); margin:20px; padding:24px; border-radius:var(--border-radius); width:100%; max-width:360px; text-align:center; box-shadow:var(--shadow); border:1px solid rgba(255,255,255,0.1); }
-        .modal-content h3 { font-size:20px; margin-bottom:12px; color:var(--accent); }
-        .modal-content p { color:var(--text-secondary); font-size:15px; line-height:1.5; margin-bottom:10px; }
-        .modal-buttons { display:flex; gap:12px; margin-top:20px; }
-        .btn-yes, .btn-no { flex:1; padding:14px; border:none; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; }
-        .btn-yes { background:var(--accent); color:#0f1117; }
-        .btn-no { background:var(--danger); color:white; }
+        .container {
+            width: 100%;
+            max-width: 420px;
+            background: var(--surface);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .header { text-align: center; margin-bottom: 24px; }
+        .header h1 {
+            font-size: 26px; font-weight: 700; letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--accent) 0%, #69f0ae 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .header p { color: var(--text-secondary); font-size: 14px; margin-top: 6px; }
+        .input-group { margin-bottom: 20px; }
+        .input-group label {
+            display: block; font-size: 13px; font-weight: 500; color: var(--text-secondary);
+            margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .input-group input {
+            width: 100%; padding: 14px 16px; background: var(--surface-light);
+            border: 2px solid transparent; border-radius: 12px; color: var(--text);
+            font-size: 16px; transition: all 0.3s ease; outline: none;
+        }
+        .input-group input:focus { border-color: var(--accent); background: #1e2230; }
+        .input-group input::placeholder { color: #6b7085; }
+        .video-wrapper {
+            position: relative; width: 100%; aspect-ratio: 1 / 1; background: #000;
+            border-radius: 12px; overflow: hidden; margin-bottom: 20px;
+            border: 2px solid var(--surface-light);
+        }
+        #video { width: 100%; height: 100%; object-fit: cover; }
+        #canvas { display: none; }
+        .btn-primary {
+            width: 100%; padding: 16px; background: var(--accent); color: #0f1117;
+            border: none; border-radius: 12px; font-size: 17px; font-weight: 700;
+            cursor: pointer; transition: all 0.3s ease; letter-spacing: 0.3px;
+        }
+        .btn-primary:active { transform: scale(0.97); background: var(--accent-dark); }
+        .btn-primary:disabled { background: #4a4f63; color: #8a8f9f; cursor: not-allowed; transform: none; }
+        .message {
+            margin-top: 16px; padding: 14px; border-radius: 12px; text-align: center;
+            font-weight: 500; display: none; animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .message.success { background: rgba(0, 230, 118, 0.15); color: #69f0ae; display: block; }
+        .message.error { background: rgba(255, 82, 82, 0.15); color: #ff8a80; display: block; }
+        .message.info { background: rgba(0, 176, 255, 0.15); color: #80d8ff; display: block; }
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px);
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: var(--surface); margin: 20px; padding: 24px; border-radius: var(--border-radius);
+            width: 100%; max-width: 360px; text-align: center; box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.1); animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-content h3 { font-size: 20px; margin-bottom: 12px; color: var(--accent); }
+        .modal-content p { color: var(--text-secondary); font-size: 15px; line-height: 1.5; margin-bottom: 10px; }
+        .modal-buttons { display: flex; gap: 12px; margin-top: 20px; }
+        .btn-yes, .btn-no {
+            flex: 1; padding: 14px; border: none; border-radius: 12px; font-size: 16px;
+            font-weight: 700; cursor: pointer; transition: all 0.2s ease;
+        }
+        .btn-yes { background: var(--accent); color: #0f1117; }
+        .btn-yes:active { background: var(--accent-dark); }
+        .btn-no { background: var(--danger); color: white; }
+        .btn-no:active { background: #d32f2f; }
+        @media (max-width: 380px) {
+            .container { padding: 16px; }
+            .header h1 { font-size: 22px; }
+            .btn-primary { font-size: 15px; padding: 14px; }
+            .modal-content { padding: 18px; }
+        }
     </style>
 </head>
 <body>
@@ -61,14 +124,17 @@
             <h1>🔍 Сканер зон TG</h1>
             <p>Подтверждение чистоты помещений</p>
         </div>
+
         <div class="input-group">
             <label for="admin-name">Имя админа</label>
-            <input type="text" id="admin-name" placeholder="Введите ваше имя" autocomplete="off">
+            <input type="text" id="admin-name" placeholder="Введите ваше имя" required autocomplete="off">
         </div>
+
         <div class="video-wrapper">
             <video id="video" autoplay playsinline muted></video>
         </div>
         <canvas id="canvas"></canvas>
+
         <button id="scan-btn" class="btn-primary">📷 Начать сканирование</button>
         <div id="message" class="message"></div>
     </div>
@@ -78,7 +144,7 @@
         <div class="modal-content">
             <h3>⚠️ Подтверждение</h3>
             <p>Зона чиста? Девайсы на месте? Мусор не лежит?</p>
-            <p style="font-weight:bold; color:#ff8a80;">Вы это подтверждаете?<br>В ином случае штраф будет назначен ВАМ!</p>
+            <p style="font-weight: bold; color: #ff8a80;">Вы это подтверждаете?<br>В ином случае штраф будет назначен ВАМ!</p>
             <div class="modal-buttons">
                 <button class="btn-yes" id="btn-confirm-yes">✅ Да</button>
                 <button class="btn-no" id="btn-confirm-no">❌ Нет</button>
@@ -88,7 +154,9 @@
 
     <script>
         // ====== НАСТРОЙКИ ======
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9Ivcl9izK0V4AOOyhPCJJVBfANJi4735PFvv06IXvp7OFdEIF776_442-87mvO8ydQw/exec'; // ← замените на ваш URL
+        // ⚠️ ЗАМЕНИТЕ ЭТУ ССЫЛКУ НА URL ВАШЕГО РАЗВЁРНУТОГО СКРИПТА
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9Ivcl9izK0V4AOOyhPCJJVBfANJi4735PFvv06IXvp7OFdEIF776_442-87mvO8ydQw/exec';
+
         const ZONES = {
             'ZONE_NORMAL_1': 'НОРМАЛ 1 ряд',
             'ZONE_NORMAL_2_3': 'НОРМАЛ 2/3 ряд',
@@ -111,7 +179,7 @@
 
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const ctx = canvas.getContext('2d');
         const scanBtn = document.getElementById('scan-btn');
         const adminInput = document.getElementById('admin-name');
         const modal = document.getElementById('confirm-modal');
@@ -127,32 +195,43 @@
         function showMessage(text, type = 'info') {
             messageDiv.textContent = text;
             messageDiv.className = 'message ' + type;
+            // Автоматически скрываем через 6 секунд
             clearTimeout(messageDiv._timeout);
-            messageDiv._timeout = setTimeout(() => { messageDiv.style.display = 'none'; }, 4000);
+            messageDiv._timeout = setTimeout(() => {
+                messageDiv.style.display = 'none';
+                messageDiv.className = 'message';
+            }, 6000);
         }
 
         function showConfirmation(zoneCode) {
             currentZone = ZONES[zoneCode] || zoneCode;
             modal.style.display = 'flex';
-            isProcessing = false; // ← ВАЖНО: разрешаем нажатие кнопок
+            isProcessing = false;
         }
 
         function closeModal() {
             modal.style.display = 'none';
+            currentZone = null;
+            isProcessing = false;
         }
 
-        // Отправка данных методом "невидимой картинки" (без CORS-ошибок)
         async function sendData(zone, admin, confirmed) {
             try {
                 const payload = { zone, admin, confirmed };
-                console.log('Sending:', payload);
+                console.log('Sending data:', payload);
+
                 const response = await fetch(SCRIPT_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const result = await response.json();
-                console.log('Response:', result);
+                console.log('Server response:', result);
                 return result.success === true;
             } catch (error) {
                 console.error('Send error:', error);
@@ -160,60 +239,46 @@
             }
         }
 
-        btnYes.addEventListener('click', () => {
-            console.log('Клик по кнопке Да');
-            const adminName = adminInput.value.trim();
-            if (!adminName) { alert('Введите ваше имя!'); return; }
-            isProcessing = true;
-            const zoneToSend = currentZone;
-            closeModal();
-            if (!zoneToSend) {
-                showMessage('❌ Зона не определена.', 'error');
-                isProcessing = false;
-                return;
+        // Остановка сканирования (камера, флаги, кнопка)
+        function stopScanning() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
             }
-            const success = sendData(zoneToSend, adminName, true);
-            if (success) showMessage('✅ Отметка успешно отправлена!', 'success');
-            else showMessage('❌ Ошибка отправки данных. Попробуйте ещё раз.', 'error');
-            isProcessing = false;
+            video.srcObject = null;
+            scanning = false;
             scanBtn.textContent = '📷 Начать сканирование';
-        });
+            scanBtn.disabled = false;
+        }
 
-        btnNo.addEventListener('click', () => {
-            closeModal();
-            showMessage('🧹 Пожалуйста, уберите зону и отсканируйте код повторно.', 'error');
-            isProcessing = false;
-            scanBtn.textContent = '📷 Начать сканирование';
-        });
-
-        scanBtn.addEventListener('click', async () => {
-            if (!adminInput.value.trim()) { alert('Введите ваше имя перед сканированием!'); return; }
-            if (scanning) { stopScanning(); return; }
-            startScanning();
-        });
-
+        // Запуск сканирования
         async function startScanning() {
             if (isProcessing) return;
+            const adminName = adminInput.value.trim();
+            if (!adminName) {
+                showMessage('⚠️ Введите ваше имя перед сканированием!', 'error');
+                return;
+            }
+
             try {
-                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' },
+                    audio: false
+                });
                 video.srcObject = stream;
                 video.play();
                 scanning = true;
                 scanBtn.textContent = '⏹ Остановить сканирование';
+                scanBtn.disabled = false;
                 requestAnimationFrame(tick);
             } catch (err) {
-                console.error('Ошибка камеры:', err);
+                console.error('Camera error:', err);
                 showMessage('📵 Не удалось получить доступ к камере.', 'error');
+                stopScanning();
             }
         }
 
-        function stopScanning() {
-            if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-            video.srcObject = null;
-            scanning = false;
-            scanBtn.textContent = '📷 Начать сканирование';
-        }
-
+        // Основной цикл сканирования
         function tick() {
             if (!scanning) return;
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -221,17 +286,21 @@
                 canvas.height = video.videoHeight;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: 'dontInvert'
+                });
                 if (code && code.data && !isProcessing) {
+                    // Останавливаем сканирование, чтобы не обрабатывать повторно
                     stopScanning();
                     isProcessing = true;
                     const zoneCode = code.data.trim();
-                    console.log('QR распознан:', zoneCode);
+                    console.log('QR detected:', zoneCode);
                     if (ZONES.hasOwnProperty(zoneCode)) {
-                        showConfirmation(zoneCode); // здесь сбросится isProcessing
+                        showConfirmation(zoneCode);
                     } else {
                         showMessage('❓ Неизвестный QR-код: ' + zoneCode, 'error');
                         isProcessing = false;
+                        // Кнопка уже в состоянии "Начать сканирование"
                     }
                     return;
                 }
@@ -239,7 +308,63 @@
             requestAnimationFrame(tick);
         }
 
-        window.onclick = (e) => { if (e.target === modal) closeModal(); };
+        // Обработчик кнопки "Начать / Остановить"
+        scanBtn.addEventListener('click', () => {
+            if (scanning) {
+                stopScanning();
+            } else {
+                startScanning();
+            }
+        });
+
+        // Обработчик "Да" в модалке
+        btnYes.addEventListener('click', async () => {
+            const adminName = adminInput.value.trim();
+            if (!adminName) {
+                // На всякий случай, но такого быть не должно
+                closeModal();
+                showMessage('⚠️ Введите ваше имя!', 'error');
+                return;
+            }
+            if (isProcessing) return;
+            isProcessing = true;
+            closeModal();
+            showMessage('⏳ Отправка данных...', 'info');
+
+            const success = await sendData(currentZone, adminName, true);
+
+            if (success) {
+                showMessage('✅ Отметка успешно отправлена!', 'success');
+            } else {
+                showMessage('❌ Ошибка отправки данных. Попробуйте ещё раз.', 'error');
+            }
+
+            // Сброс состояния, сканирование уже остановлено (вызвано stopScanning при обнаружении кода)
+            isProcessing = false;
+            currentZone = null;
+            // Кнопка уже в состоянии "Начать сканирование"
+        });
+
+        // Обработчик "Нет" в модалке
+        btnNo.addEventListener('click', () => {
+            closeModal();
+            showMessage('🧹 Пожалуйста, уберите зону и отсканируйте код повторно.', 'error');
+            isProcessing = false;
+            currentZone = null;
+            // Сканирование уже остановлено, кнопка в состоянии "Начать"
+        });
+
+        // Закрытие модалки при клике вне её
+        window.onclick = function(event) {
+            if (event.target === modal) {
+                closeModal();
+                // Если сканирование было остановлено, ничего не делаем
+                // Иначе можно остановить, но лучше оставить как есть
+            }
+        };
+
+        // Если пользователь закрыл модалку, сбросить флаг
+        // (дополнительно, если нужно)
     </script>
 </body>
 </html>
