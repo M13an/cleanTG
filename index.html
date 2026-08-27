@@ -154,7 +154,7 @@
 
     <script>
         // ====== НАСТРОЙКИ ======
-        // ⚠️ ЗАМЕНИТЕ ЭТУ ССЫЛКУ НА URL ВАШЕГО РАЗВЁРНУТОГО СКРИПТА
+        // ⚠️ ЗАМЕНИТЕ ЭТУ ССЫЛКУ НА URL ВАШЕГО РАЗВЁРНУТОГО СКРИПТА (без слеша в конце)
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx9Ivcl9izK0V4AOOyhPCJJVBfANJi4735PFvv06IXvp7OFdEIF776_442-87mvO8ydQw/exec';
 
         const ZONES = {
@@ -188,8 +188,8 @@
         const messageDiv = document.getElementById('message');
 
         let scanning = false;
-        let currentZone = null;       // хранит название зоны (человеческое)
-        let currentZoneCode = null;   // хранит код зоны (для отправки)
+        let currentZone = null;
+        let currentZoneCode = null;
         let stream = null;
         let isProcessing = false;
 
@@ -197,7 +197,6 @@
             messageDiv.textContent = text;
             messageDiv.className = 'message ' + type;
             clearTimeout(messageDiv._timeout);
-            // Автоматическое скрытие через 7 секунд (для ошибок можно дольше)
             const delay = (type === 'error') ? 8000 : 5000;
             messageDiv._timeout = setTimeout(() => {
                 messageDiv.style.display = 'none';
@@ -209,29 +208,22 @@
             currentZoneCode = zoneCode;
             currentZone = ZONES[zoneCode] || zoneCode;
             modal.style.display = 'flex';
-            // isProcessing оставляем true, чтобы блокировать повторные сканирования
         }
 
         function closeModal() {
             modal.style.display = 'none';
-            // НЕ сбрасываем currentZone и currentZoneCode здесь
         }
 
+        // ---------- ОТПРАВКА ДАННЫХ (GET) ----------
         async function sendData(zoneCode, admin, confirmed) {
             try {
-                // Отправляем как application/x-www-form-urlencoded (избегаем CORS preflight)
-                const params = new URLSearchParams();
-                params.append('zone', zoneCode);
-                params.append('admin', admin);
-                params.append('confirmed', confirmed ? 'true' : 'false');
+                const url = new URL(SCRIPT_URL);
+                url.searchParams.append('zone', zoneCode);
+                url.searchParams.append('admin', admin);
+                url.searchParams.append('confirmed', confirmed ? 'true' : 'false');
+                url.searchParams.append('_', Date.now()); // антикеш
 
-                const response = await fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: params.toString()
-                });
+                const response = await fetch(url.toString(), { method: 'GET' });
 
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
@@ -246,7 +238,7 @@
             }
         }
 
-        // Остановка сканирования (камера, флаги, кнопка)
+        // ---------- УПРАВЛЕНИЕ КАМЕРОЙ ----------
         function stopScanning() {
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
@@ -258,7 +250,6 @@
             scanBtn.disabled = false;
         }
 
-        // Запуск сканирования
         async function startScanning() {
             if (isProcessing) return;
             const adminName = adminInput.value.trim();
@@ -285,7 +276,7 @@
             }
         }
 
-        // Основной цикл сканирования
+        // ---------- ЦИКЛ СКАНИРОВАНИЯ ----------
         function tick() {
             if (!scanning) return;
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
@@ -297,7 +288,6 @@
                     inversionAttempts: 'dontInvert'
                 });
                 if (code && code.data && !isProcessing) {
-                    // Останавливаем сканирование, чтобы не обрабатывать повторно
                     stopScanning();
                     isProcessing = true;
                     const zoneCode = code.data.trim();
@@ -307,7 +297,6 @@
                     } else {
                         showMessage('❓ Неизвестный QR-код: ' + zoneCode, 'error');
                         isProcessing = false;
-                        // Кнопка уже в состоянии "Начать сканирование"
                     }
                     return;
                 }
@@ -315,7 +304,7 @@
             requestAnimationFrame(tick);
         }
 
-        // Обработчик кнопки "Начать / Остановить"
+        // ---------- ОБРАБОТЧИКИ КНОПОК ----------
         scanBtn.addEventListener('click', () => {
             if (scanning) {
                 stopScanning();
@@ -324,11 +313,9 @@
             }
         });
 
-        // Обработчик "Да" в модалке
         btnYes.addEventListener('click', async () => {
             const adminName = adminInput.value.trim();
             if (!adminName) {
-                // На всякий случай
                 closeModal();
                 showMessage('⚠️ Введите ваше имя!', 'error');
                 isProcessing = false;
@@ -336,7 +323,6 @@
             }
             if (isProcessing) return;
 
-            // Сохраняем код зоны, так как после отправки мы сбросим
             const zoneCodeToSend = currentZoneCode;
             if (!zoneCodeToSend) {
                 closeModal();
@@ -345,13 +331,11 @@
                 return;
             }
 
-            // Закрываем модалку (но не сбрасываем переменные)
             closeModal();
             showMessage('⏳ Отправка данных...', 'info');
 
             const success = await sendData(zoneCodeToSend, adminName, true);
 
-            // Сбрасываем состояние зоны после отправки
             currentZone = null;
             currentZoneCode = null;
             isProcessing = false;
@@ -361,10 +345,8 @@
             } else {
                 showMessage('❌ Ошибка отправки данных. Попробуйте ещё раз.', 'error');
             }
-            // Кнопка уже в состоянии "Начать сканирование" (сканирование остановлено)
         });
 
-        // Обработчик "Нет" в модалке
         btnNo.addEventListener('click', () => {
             const adminName = adminInput.value.trim();
             if (!adminName) {
@@ -382,11 +364,9 @@
                 return;
             }
 
-            // Отправляем запись с "Нет"
             closeModal();
             showMessage('⏳ Отправка данных (отказ)...', 'info');
 
-            // Асинхронно отправляем, но не ждём ответа для UI (можно и подождать)
             sendData(zoneCodeToSend, adminName, false).then(success => {
                 if (success) {
                     showMessage('🧹 Отказ зафиксирован. Пожалуйста, уберите зону и отсканируйте код повторно.', 'error');
@@ -395,20 +375,15 @@
                 }
             });
 
-            // Сбрасываем состояние зоны
             currentZone = null;
             currentZoneCode = null;
             isProcessing = false;
-            // Кнопка уже в состоянии "Начать сканирование"
         });
 
-        // Закрытие модалки при клике вне её
+        // Закрытие модалки по клику вне
         window.onclick = function(event) {
             if (event.target === modal) {
                 closeModal();
-                // Если сканирование остановлено, ничего не делаем
-                // Если хотим, чтобы при закрытии модалки можно было продолжить сканирование, можно сбросить isProcessing
-                // Но лучше оставить как есть
                 isProcessing = false;
                 currentZone = null;
                 currentZoneCode = null;
