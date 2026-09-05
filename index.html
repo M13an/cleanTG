@@ -6,7 +6,7 @@
     <title>Сканер зон TG</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <style>
-        /* (стили без изменений) */
+        /* (стили без изменений, добавлены только новые правила) */
         :root {
             --bg: #0f1117;
             --surface: #1a1d27;
@@ -67,13 +67,61 @@
         }
         #video { width: 100%; height: 100%; object-fit: cover; }
         #canvas { display: none; }
+
+        /* Новые стили для кнопок в ряд */
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+        }
+        .btn-row .btn-primary {
+            flex: 2;
+        }
+        .btn-secondary {
+            flex: 1;
+            padding: 16px 8px;
+            background: var(--surface-light);
+            color: var(--text);
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+        .btn-secondary:active {
+            transform: scale(0.97);
+            background: #2c3145;
+        }
+        .btn-secondary:disabled {
+            background: #2a2e3d;
+            color: #6b7085;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary.active {
+            background: #ffb300;
+            color: #0f1117;
+        }
+
         .btn-primary {
-            width: 100%; padding: 16px; background: var(--accent); color: #0f1117;
-            border: none; border-radius: 12px; font-size: 17px; font-weight: 700;
-            cursor: pointer; transition: all 0.3s ease; letter-spacing: 0.3px;
+            width: 100%;
+            padding: 16px;
+            background: var(--accent);
+            color: #0f1117;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            letter-spacing: 0.3px;
         }
         .btn-primary:active { transform: scale(0.97); background: var(--accent-dark); }
         .btn-primary:disabled { background: #4a4f63; color: #8a8f9f; cursor: not-allowed; transform: none; }
+
         .message {
             margin-top: 16px; padding: 14px; border-radius: 12px; text-align: center;
             font-weight: 500; display: none; animation: fadeIn 0.3s ease;
@@ -85,6 +133,7 @@
         .message.success { background: rgba(0, 230, 118, 0.15); color: #69f0ae; display: block; }
         .message.error { background: rgba(255, 82, 82, 0.15); color: #ff8a80; display: block; }
         .message.info { background: rgba(0, 176, 255, 0.15); color: #80d8ff; display: block; }
+
         .modal {
             display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(6px);
@@ -110,10 +159,11 @@
         .btn-yes:active { background: var(--accent-dark); }
         .btn-no { background: var(--danger); color: white; }
         .btn-no:active { background: #d32f2f; }
+
         @media (max-width: 380px) {
             .container { padding: 16px; }
             .header h1 { font-size: 22px; }
-            .btn-primary { font-size: 15px; padding: 14px; }
+            .btn-primary, .btn-secondary { font-size: 15px; padding: 14px 8px; }
             .modal-content { padding: 18px; }
         }
     </style>
@@ -135,7 +185,12 @@
         </div>
         <canvas id="canvas"></canvas>
 
-        <button id="scan-btn" class="btn-primary">📷 Начать сканирование</button>
+        <!-- Блок кнопок: основная + вспышка -->
+        <div class="btn-row">
+            <button id="scan-btn" class="btn-primary">📷 Начать сканирование</button>
+            <button id="flash-btn" class="btn-secondary" disabled>💡 Вкл</button>
+        </div>
+
         <div id="message" class="message"></div>
     </div>
 
@@ -153,8 +208,7 @@
     </div>
 
     <script>
-        // ====== НАСТРОЙКИ ======
-        // ⚠️ ЗАМЕНИТЕ НА ВАШ РЕАЛЬНЫЙ URL (без слеша в конце)
+        // ====== ОСНОВНОЙ КОД (без изменений) ======
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbycMsdHuk8uZw9qkmIZtDAUciAv9fLB7nC-L8fNzgHyviN9otUn3WLA_yM2mbEtnZV4Hg/exec';
 
         const ZONES = {
@@ -175,7 +229,6 @@
             'ZONE_FOOD': 'Фуд зона',
             'ZONE_TAMBOUR': 'Тамбур'
         };
-        // ========================
 
         console.log('[INIT] Приложение загружено');
 
@@ -330,7 +383,6 @@
             }
         });
 
-        // Кнопка "ДА" (исправлена: убрана блокировка isProcessing)
         btnYes.addEventListener('click', () => {
             console.log('[UI] Кнопка "Да" нажата');
             const adminName = adminInput.value.trim();
@@ -349,20 +401,16 @@
                 return;
             }
 
-            // Закрываем модалку и отправляем
             closeModal();
             showMessage('⏳ Отправка данных (Да)...', 'info');
 
-            // Отправляем через iframe
             sendData(zoneCodeToSend, adminName, true);
 
-            // Сбрасываем состояние
             currentZoneCode = null;
             isProcessing = false;
             showMessage('✅ Отметка успешно отправлена!', 'success');
         });
 
-        // Кнопка "НЕТ" (работает, оставляем как есть, но добавим логи)
         btnNo.addEventListener('click', () => {
             console.log('[UI] Кнопка "Нет" нажата');
             const adminName = adminInput.value.trim();
@@ -391,7 +439,6 @@
             showMessage('🧹 Отказ зафиксирован. Пожалуйста, уберите зону и отсканируйте код повторно.', 'error');
         });
 
-        // Закрытие модалки по клику вне
         window.onclick = function(event) {
             if (event.target === modal) {
                 console.log('[UI] Клик вне модалки, закрываем');
@@ -400,6 +447,94 @@
                 currentZoneCode = null;
             }
         };
+
+        // ========== ДОПОЛНИТЕЛЬНЫЙ КОД ДЛЯ УПРАВЛЕНИЯ ВСПЫШКОЙ ==========
+        // (расширяет функционал, не меняя основной код)
+        (function() {
+            // Сохраняем ссылки на оригинальные функции
+            const originalStop = stopScanning;
+            const originalStart = startScanning;
+
+            const flashBtn = document.getElementById('flash-btn');
+            let flashOn = false;
+
+            // Обновление внешнего вида и состояния кнопки вспышки
+            function updateFlashButton() {
+                flashBtn.disabled = !scanning;
+                flashBtn.textContent = flashOn ? '🔦 Выкл' : '💡 Вкл';
+                if (flashOn) {
+                    flashBtn.classList.add('active');
+                } else {
+                    flashBtn.classList.remove('active');
+                }
+            }
+
+            // Выключение вспышки (безопасно)
+            function turnOffFlash() {
+                if (!stream) return;
+                const track = stream.getVideoTracks()[0];
+                if (!track) return;
+                if (track.getCapabilities && track.getCapabilities().torch) {
+                    track.applyConstraints({ advanced: [{ torch: false }] })
+                        .then(() => {
+                            flashOn = false;
+                            updateFlashButton();
+                        })
+                        .catch(err => console.warn('Не удалось выключить вспышку:', err));
+                }
+            }
+
+            // Переопределяем startScanning – после запуска обновляем кнопку
+            startScanning = async function() {
+                await originalStart.call(this);
+                updateFlashButton();
+            };
+
+            // Переопределяем stopScanning – при остановке выключаем вспышку и обновляем кнопку
+            stopScanning = function() {
+                if (flashOn) {
+                    turnOffFlash();
+                }
+                originalStop();
+                updateFlashButton();
+            };
+
+            // Обработчик клика по кнопке вспышки
+            flashBtn.addEventListener('click', function() {
+                if (!scanning) {
+                    showMessage('Сначала запустите камеру', 'info');
+                    return;
+                }
+                if (!stream) {
+                    showMessage('Камера не активна', 'error');
+                    return;
+                }
+                const track = stream.getVideoTracks()[0];
+                if (!track) {
+                    showMessage('Видеотрек недоступен', 'error');
+                    return;
+                }
+                if (!track.getCapabilities || !track.getCapabilities().torch) {
+                    showMessage('Вспышка не поддерживается на этом устройстве', 'error');
+                    return;
+                }
+
+                const newState = !flashOn;
+                track.applyConstraints({ advanced: [{ torch: newState }] })
+                    .then(() => {
+                        flashOn = newState;
+                        updateFlashButton();
+                        showMessage(newState ? 'Вспышка включена' : 'Вспышка выключена', 'info');
+                    })
+                    .catch(err => {
+                        console.error('Ошибка управления вспышкой:', err);
+                        showMessage('Не удалось переключить вспышку', 'error');
+                    });
+            });
+
+            // Начальное состояние
+            updateFlashButton();
+        })();
     </script>
 </body>
 </html>
